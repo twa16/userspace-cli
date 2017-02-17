@@ -20,6 +20,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"crypto/tls"
+	"net/http"
+	"github.com/twa16/userspace/daemon"
+	"encoding/json"
+	"bytes"
 )
 
 var cfgFile string
@@ -75,4 +80,33 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+func GetOrchestratorProtocol() string {
+	return "http://"
+}
+
+func GetHttpClient(ignoreSSLErrors bool) *http.Client {
+	//Create the client
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: ignoreSSLErrors},
+	}
+	return &http.Client{Transport: tr}
+}
+
+func GetOrchestratorInformation(url string) (*userspaced.OrchestratorInfo, error) {
+	hClient := GetHttpClient(true)
+	resp, err := hClient.Get(GetOrchestratorProtocol()+url+"/orchestratorinfo")
+	if err != nil {
+		return nil, err
+	}
+	//Get the body of the response as a string
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	var orcInfo *userspaced.OrchestratorInfo
+	err = json.Unmarshal(buf.Bytes(), &orcInfo)
+	if err != nil {
+		return nil, err
+	}
+	return orcInfo, nil
 }
