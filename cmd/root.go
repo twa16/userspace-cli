@@ -28,7 +28,8 @@ import (
 )
 
 var cfgFile string
-
+var OrchestratorInfo *userspaced.OrchestratorInfo
+var OrchestratorURL string
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "userspace-cli",
@@ -73,17 +74,13 @@ func initConfig() {
 	}
 
 	viper.SetConfigName(".userspace-cli") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")  // adding home directory as first search path
-	viper.AutomaticEnv()          // read in environment variables that match
+	viper.AddConfigPath("$HOME")          // adding home directory as first search path
+	viper.AutomaticEnv()                  // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
-}
-
-func GetOrchestratorProtocol() string {
-	return "http://"
 }
 
 func GetHttpClient(ignoreSSLErrors bool) *http.Client {
@@ -96,7 +93,7 @@ func GetHttpClient(ignoreSSLErrors bool) *http.Client {
 
 func GetOrchestratorInformation(url string) (*userspaced.OrchestratorInfo, error) {
 	hClient := GetHttpClient(true)
-	resp, err := hClient.Get(GetOrchestratorProtocol()+url+"/orchestratorinfo")
+	resp, err := hClient.Get("https://"+url+"/orchestratorinfo")
 	if err != nil {
 		return nil, err
 	}
@@ -108,5 +105,21 @@ func GetOrchestratorInformation(url string) (*userspaced.OrchestratorInfo, error
 	if err != nil {
 		return nil, err
 	}
+	OrchestratorInfo = orcInfo
+	OrchestratorURL = "https://"+url
 	return orcInfo, nil
+}
+
+func SubmitCASTicket(ticket string) (string, error) {
+	hClient := GetHttpClient(true)
+	resp, err := hClient.Get(OrchestratorURL+"/caslogin?ticket="+ticket)
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", err
+	}
+	//Get the body of the response as a string
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	fmt.Println(buf.String())
+	return "", err
 }
