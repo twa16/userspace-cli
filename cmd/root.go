@@ -25,7 +25,19 @@ import (
 	"github.com/twa16/userspace/daemon"
 	"encoding/json"
 	"bytes"
+	"github.com/twa16/go-auth"
+	"github.com/pkg/errors"
+	"strconv"
+	"io/ioutil"
+	"github.com/mitchellh/go-homedir"
 )
+
+type SessionRecord struct {
+	UserID uint
+	SessionToken string
+	OrchestratorHostname string
+	IgnoreSSLErrors bool
+}
 
 var cfgFile string
 var OrchestratorInfo *userspaced.OrchestratorInfo
@@ -76,7 +88,8 @@ func initConfig() {
 	viper.SetConfigName(".userspace-cli") // name of config file (without extension)
 	viper.AddConfigPath("$HOME")          // adding home directory as first search path
 	viper.AutomaticEnv()                  // read in environment variables that match
-
+	homeDirectory, _ := homedir.Dir()
+	viper.SetDefault("HomeDirectory", homeDirectory)
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
@@ -110,16 +123,47 @@ func GetOrchestratorInformation(url string) (*userspaced.OrchestratorInfo, error
 	return orcInfo, nil
 }
 
-func SubmitCASTicket(ticket string) (string, error) {
+//SubmitCASTicket Attempts authentication against orchestrator
+func SubmitCASTicket(ticket string) (*simpleauth.Session, error) {
 	hClient := GetHttpClient(true)
 	resp, err := hClient.Get(OrchestratorURL+"/caslogin?ticket="+ticket)
 	if err != nil {
 		fmt.Println(err.Error())
-		return "", err
+		return nil, err
 	}
+	//See if we logged in successfully
+	if resp.StatusCode == 401 {
+		return nil, errors.New("Invalid Login")
+	}
+
 	//Get the body of the response as a string
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
-	fmt.Println(buf.String())
-	return "", err
+
+	//Catch other errors
+	if resp.StatusCode != 200 {
+		return nil, errors.New("Error "+strconv.Itoa(resp.StatusCode)+": "+buf.String())
+	}
+
+	//Unmarshal our session
+	var session simpleauth.Session
+	err = json.Unmarshal(buf.Bytes(), &session)
+	if err != nil {
+		return nil, err
+	}
+
+	//Ok let's return our session
+	return &session, nil
+}
+
+func SaveSession(sessionObj simpleauth.Session, hostname string, ignoreSSLErrors bool) error {
+	sessionRecord := SessionRecord{
+		SessionToken: sessionObj.AuthenticationToken,
+		UserID: sessionObj.AuthUserID,
+		OrchestratorHostname: hostname,
+		IgnoreSSLErrors: ignoreSSLErrors,
+	}
+	sessionJSON, _ := json.Marshal(sessionRecord)
+	err := ioutil.WriteFile(viper.GetString("HomeDirectory")+"/.userspace-session", sessionJSON, 0644)
+	return err
 }

@@ -49,6 +49,7 @@ var loginCmd = &cobra.Command{
 		}
 
 		useCAS := true
+		//If there are multiple auth methods choose one
 		if orcInfo.AllowsLocalLogin && orcInfo.SupportsCAS {
 			fmt.Print("What authentication method do you use wish to use(CAS/Local): ")
 			useCASString, _ := reader.ReadString('\n')
@@ -58,13 +59,23 @@ var loginCmd = &cobra.Command{
 				useCAS = false
 			}
 		}
+		//If using CAS, go through that flow
 		if useCAS {
 			config := gocas.CASServerConfig{}
 			config.ServerHostname = orcInfo.CASURL
 			config.IgnoreSSLErrors = false
 
 			ticket := config.StartLocalAuthenticationProcess()
-			SubmitCASTicket(ticket)
+			session, err := SubmitCASTicket(ticket)
+			if err != nil {
+				fmt.Println(err)
+			}
+			err = SaveSession(*session, orcHostname, false)
+			if err != nil {
+				fmt.Println("Failed to save session: "+ err.Error())
+				panic("Could not save session. Send help.")
+			}
+			fmt.Println("Sucessfully logged in and saved session.")
 
 		} else {
 			fmt.Errorf("Error: %s\n","Local Login not yet Supported!")
