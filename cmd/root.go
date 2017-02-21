@@ -167,3 +167,13 @@ func SaveSession(sessionObj simpleauth.Session, hostname string, ignoreSSLErrors
 	err := ioutil.WriteFile(viper.GetString("HomeDirectory")+"/.userspace-session", sessionJSON, 0644)
 	return err
 }
+
+func GetSavedSession() (SessionRecord, error) {
+	var sessionRecord SessionRecord
+	sessionBytes, err := ioutil.ReadFile(viper.GetString("HomeDirectory") + "/.userspace-session")
+	if err != nil {
+		return sessionRecord, err
+	}
+	err = json.Unmarshal(sessionBytes, &sessionBytes)
+	return sessionRecord, err
+}
