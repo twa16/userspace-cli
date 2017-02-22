@@ -22,7 +22,9 @@ import (
 	"net/http"
 	"bytes"
 	"encoding/json"
-	"github.com/k0kubun/pp"
+	"github.com/olekukonko/tablewriter"
+	"os"
+	"strconv"
 )
 
 // listCmd represents the list command
@@ -36,10 +38,28 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("list called")
-
-		pp.Println(GetSpaces())
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"ID", "Image", "Name", "State", "SSH Host", "SSH Port"})
+		for _, space := range GetSpaces() {
+			var sshHost string
+			var sshPort uint16
+			for _, mapping := range space.PortLinks {
+				if mapping.SpacePort == 22 {
+					sshPort = mapping.ExternalPort
+					sshHost = mapping.ExternalAddress
+				}
+			}
+			line := []string {
+				strconv.Itoa(int(space.ID)),
+				getImageNameByID(space.ID),
+				space.FriendlyName,
+				space.SpaceState,
+				sshHost,
+				strconv.FormatUint(uint64(sshPort), 10),
+			}
+			table.Append(line)
+		}
+		table.Render()
 	},
 }
 
@@ -59,7 +79,7 @@ func init() {
 }
 
 func GetSpaces() []userspaced.Space {
-	var spaces []userspaced.Space
+	spaces := []userspaced.Space{}
 	session, err := GetSavedSession()
 	if err != nil {
 		fmt.Println("Session Error: "+err.Error())
@@ -77,4 +97,13 @@ func GetSpaces() []userspaced.Space {
 
 	json.Unmarshal(buf.Bytes(), &spaces)
 	return spaces
+}
+
+func getImageNameByID(id uint) string{
+	for _, image := range GetImages() {
+		if image.ID == id {
+			return image.Name
+		}
+	}
+	return "ERROR"
 }
