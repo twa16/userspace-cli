@@ -177,3 +177,4 @@ func GetSavedSession() (SessionRecord, error) {
 	err = json.Unmarshal(sessionBytes, &sessionRecord)
 	return sessionRecord, err
 }
+

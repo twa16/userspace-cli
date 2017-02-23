@@ -87,7 +87,11 @@ func GetSpaces() []userspaced.Space {
 	}
 	url := "https://"+session.OrchestratorHostname+"/api/v1/spaces"
 	hClient := GetHttpClient(true)
-	r, _ := http.NewRequest("GET", url, nil)
+	r, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Errorf("Error:  %s\n", err.Error())
+		return spaces
+	}
 	r.Header.Add("X-Auth-Token", session.SessionToken)
 	resp, err := hClient.Do(r)
 	buf := new(bytes.Buffer)
