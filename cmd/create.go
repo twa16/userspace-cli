@@ -18,6 +18,14 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"net/http"
+	"bytes"
+	"bufio"
+	"log"
+	"github.com/twa16/userspace/daemon"
+	"encoding/json"
+	"strings"
+	"os"
 )
 
 // createCmd represents the create command
@@ -33,20 +41,52 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
 		fmt.Println("create called")
+
+		//Get the saved session
+		session, err := GetSavedSession()
+		if err != nil {
+			fmt.Errorf("Error: %s\n", err.Error())
+			return
+		}
+
+		//Build URL
+		url := "https://"+session.OrchestratorHostname+"/api/v1/spaces"
+		//Get HTTP Client
+		hClient := GetHttpClient(true)
+		//Create Space Object
+		spaceRequest := userspaced.Space{}
+		spaceRequest.FriendlyName = "Test Space"
+		spaceRequest.SSHKeyID = 0
+		spaceRequest.ImageID = 1
+		//JSONify Request
+		jsonBytes, err := json.Marshal(&spaceRequest)
+		if err != nil {
+			fmt.Errorf("Error: %s\n", err.Error())
+			return
+		}
+		//Create Request
+		r, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+		r.Header.Add("X-Auth-Token", session.SessionToken)
+		//Send the data and get the response
+		resp, err := hClient.Do(r)
+		if err != nil {
+			fmt.Errorf("Error: %s\n", err.Error())
+			return
+		}
+		//Get the body of the response as a string
+		reader := bufio.NewReader(resp.Body)
+		for {
+			line, _ := reader.ReadBytes('\n')
+			if string(line) != ""{
+				log.Println("\n"+string(line))
+			}
+			if strings.HasPrefix(string(line), "Error") || strings.HasPrefix(string(line), "Creation Complete") {
+				os.Exit(1)
+			}
+		}
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(createCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// createCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
 }

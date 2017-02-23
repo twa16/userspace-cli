@@ -94,9 +94,17 @@ func GetSpaces() []userspaced.Space {
 	}
 	r.Header.Add("X-Auth-Token", session.SessionToken)
 	resp, err := hClient.Do(r)
+	if err != nil {
+		fmt.Errorf("Error Getting Spaces: %s\n", err.Error())
+		return spaces
+	}
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 
+	if buf.String() == "Session Expired" {
+		fmt.Println("Session is Expired")
+		os.Exit(2)
+	}
 	//TODO: Handle error conditions
 
 	json.Unmarshal(buf.Bytes(), &spaces)
