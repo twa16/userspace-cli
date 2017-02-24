@@ -46,12 +46,12 @@ to quickly create a Cobra application.`,
 			for _, mapping := range space.PortLinks {
 				if mapping.SpacePort == 22 {
 					sshPort = mapping.ExternalPort
-					sshHost = mapping.ExternalAddress
+					sshHost = mapping.DisplayAddress
 				}
 			}
 			line := []string {
 				strconv.Itoa(int(space.ID)),
-				getImageNameByID(space.ID),
+				getImageNameByID(space.ImageID),
 				space.FriendlyName,
 				space.SpaceState,
 				sshHost,
