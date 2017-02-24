@@ -22,6 +22,7 @@ import (
 	"os"
 	"bufio"
 	"strings"
+	"strconv"
 )
 
 // loginCmd represents the login command
@@ -40,6 +41,20 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println("Error: "+err.Error())
 			os.Exit(1)
+		}
+		var ignoreSSL bool
+		for true {
+			fmt.Print("Ignore SSL Errors(true/false): ")
+			ignoreSSLString, err := reader.ReadString('\n')
+			ignoreSSLString = strings.TrimSpace(ignoreSSLString)
+			if err != nil {
+				fmt.Println("Error: " + err.Error())
+				os.Exit(1)
+			}
+			ignoreSSL, err = strconv.ParseBool(ignoreSSLString)
+			if err == nil {
+				break
+			}
 		}
 
 		//Make sure the orchestrator is allowing logins
@@ -70,7 +85,7 @@ var loginCmd = &cobra.Command{
 			if err != nil {
 				fmt.Println(err)
 			}
-			err = SaveSession(*session, orcHostname, false)
+			err = SaveSession(*session, orcHostname, ignoreSSL)
 			if err != nil {
 				fmt.Println("Failed to save session: "+ err.Error())
 				panic("Could not save session. Send help.")

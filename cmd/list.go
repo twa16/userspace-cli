@@ -86,7 +86,7 @@ func GetSpaces() []userspaced.Space {
 		return spaces
 	}
 	url := "https://"+session.OrchestratorHostname+"/api/v1/spaces"
-	hClient := GetHttpClient(true)
+	hClient := GetHttpClient(session.IgnoreSSLErrors)
 	r, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		fmt.Errorf("Error:  %s\n", err.Error())

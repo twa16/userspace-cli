@@ -76,7 +76,7 @@ func GetImages() []userspaced.SpaceImage {
 		return images
 	}
 	url := "https://"+session.OrchestratorHostname+"/api/v1/images"
-	hClient := GetHttpClient(true)
+	hClient := GetHttpClient(session.IgnoreSSLErrors)
 	r, _ := http.NewRequest("GET", url, nil)
 	r.Header.Add("X-Auth-Token", session.SessionToken)
 	resp, err := hClient.Do(r)
