@@ -22,7 +22,6 @@ import (
 	"os"
 	"bufio"
 	"strings"
-	"strconv"
 )
 
 // loginCmd represents the login command
@@ -39,9 +38,11 @@ var loginCmd = &cobra.Command{
 		orcHostname = strings.TrimSpace(orcHostname)
 		orcInfo, err := GetOrchestratorInformation(orcHostname)
 		if err != nil {
-			fmt.Println("Error: "+err.Error())
+			//fmt.Println("Error: "+err.Error())
+			fmt.Printf("Error connecting to the orchestrator: %s\n", err.Error())
 			os.Exit(1)
 		}
+		/*
 		var ignoreSSL bool
 		for true {
 			fmt.Print("Ignore SSL Errors(true/false): ")
@@ -55,7 +56,7 @@ var loginCmd = &cobra.Command{
 			if err == nil {
 				break
 			}
-		}
+		}*/
 
 		//Make sure the orchestrator is allowing logins
 		if !orcInfo.AllowsLocalLogin && !orcInfo.SupportsCAS {

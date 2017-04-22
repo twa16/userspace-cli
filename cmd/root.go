@@ -66,6 +66,7 @@ func Execute() {
 	}
 }
 
+var ignoreSSL bool
 func init() {
 	cobra.OnInitialize(initConfig)
 
@@ -74,6 +75,8 @@ func init() {
 	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.userspace-cli.yaml)")
+	RootCmd.PersistentFlags().BoolVarP(&ignoreSSL, "insecure", "i", false, "Ignore SSL Errors")
+	RootCmd.Flag("insecure").NoOptDefVal = "true"
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
@@ -105,7 +108,7 @@ func GetHttpClient(ignoreSSLErrors bool) *http.Client {
 }
 
 func GetOrchestratorInformation(url string) (*userspaced.OrchestratorInfo, error) {
-	hClient := GetHttpClient(true)
+	hClient := GetHttpClient(ignoreSSL)
 	resp, err := hClient.Get("https://"+url+"/orchestratorinfo")
 	if err != nil {
 		return nil, err
@@ -125,7 +128,7 @@ func GetOrchestratorInformation(url string) (*userspaced.OrchestratorInfo, error
 
 //SubmitCASTicket Attempts authentication against orchestrator
 func SubmitCASTicket(ticket string) (*simpleauth.Session, error) {
-	hClient := GetHttpClient(true)
+	hClient := GetHttpClient(ignoreSSL)
 	resp, err := hClient.Get(OrchestratorURL+"/caslogin?ticket="+ticket)
 	if err != nil {
 		fmt.Println(err.Error())

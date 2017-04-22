@@ -80,6 +80,10 @@ func GetImages() []userspaced.SpaceImage {
 	r, _ := http.NewRequest("GET", url, nil)
 	r.Header.Add("X-Auth-Token", session.SessionToken)
 	resp, err := hClient.Do(r)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		os.Exit(1)
+	}
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 
