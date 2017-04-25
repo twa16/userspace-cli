@@ -39,14 +39,17 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"ID", "Image", "Name", "State", "SSH Host", "SSH Port"})
+		table.SetHeader([]string{"ID", "Image", "Name", "State", "Host Address", "SSH Port", "Service Port"})
 		for _, space := range GetSpaces() {
 			var sshHost string
 			var sshPort uint16
+			var servicePort uint16
 			for _, mapping := range space.PortLinks {
 				if mapping.SpacePort == 22 {
 					sshPort = mapping.ExternalPort
 					sshHost = mapping.DisplayAddress
+				} else {
+					servicePort = mapping.ExternalPort
 				}
 			}
 			line := []string {
@@ -56,6 +59,7 @@ to quickly create a Cobra application.`,
 				space.SpaceState,
 				sshHost,
 				strconv.FormatUint(uint64(sshPort), 10),
+				strconv.FormatUint(uint64(servicePort), 10),
 			}
 			table.Append(line)
 		}
