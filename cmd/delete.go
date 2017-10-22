@@ -17,19 +17,20 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"bufio"
-	"os"
-	"strings"
-	"strconv"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a space",
-	Long: `Deletes a space and all associated data.`,
+	Long:  `Deletes a space and all associated data.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		execDeleteCommand(cmd, args)
 	},
@@ -39,7 +40,7 @@ func execDeleteCommand(cmd *cobra.Command, args []string) {
 	reader := bufio.NewReader(os.Stdin)
 	session, err := GetSavedSession()
 	if err != nil {
-		fmt.Println("Error Getting Sessions: "+err.Error())
+		fmt.Println("Error Getting Sessions: " + err.Error())
 		os.Exit(1)
 	}
 	//Print spaces
@@ -55,7 +56,7 @@ func execDeleteCommand(cmd *cobra.Command, args []string) {
 	spaceIndexString = strings.TrimSpace(spaceIndexString)
 	spaceIndex, err := strconv.Atoi(spaceIndexString)
 	if err != nil {
-		fmt.Println("Invalid Choice: "+err.Error())
+		fmt.Println("Invalid Choice: " + err.Error())
 		os.Exit(1)
 	}
 	if spaceIndex < 0 || spaceIndex >= len(spaces) {
@@ -68,14 +69,14 @@ func execDeleteCommand(cmd *cobra.Command, args []string) {
 	fmt.Printf("Are you sure you want to delete %s(%d) (yes,no)? ", spaceToDelete.FriendlyName, spaceToDelete.ID)
 	confirmChoiceString, err := reader.ReadString('\n')
 	if err != nil {
-		fmt.Println("Invalid Choice: "+err.Error())
+		fmt.Println("Invalid Choice: " + err.Error())
 		os.Exit(1)
 	}
 	if strings.TrimSpace(confirmChoiceString) == "yes" {
-		fmt.Printf("Deleting %s\n", spaceToDelete.FriendlyName)
+		fmt.Printf("Deleting %s (This may take a minute or two.)\n", spaceToDelete.FriendlyName)
 		response, err := SendSpaceDeleteRequest(session, strconv.Itoa(int(spaceToDelete.ID))) //Yay for gross type conversions
 		if err != nil {
-			fmt.Println("Error sending request: "+err.Error())
+			fmt.Println("Error sending request: " + err.Error())
 			os.Exit(1)
 		}
 		if response.StatusCode != 200 {
@@ -88,9 +89,9 @@ func execDeleteCommand(cmd *cobra.Command, args []string) {
 	}
 }
 
-func SendSpaceDeleteRequest(session SessionRecord, spaceid string) (*http.Response, error){
+func SendSpaceDeleteRequest(session SessionRecord, spaceid string) (*http.Response, error) {
 	//Build URL
-	url := "https://"+session.OrchestratorHostname+"/api/v1/space/"+spaceid
+	url := "https://" + session.OrchestratorHostname + "/api/v1/space/" + spaceid
 	//Get HTTP Client
 	hClient := GetHttpClient(session.IgnoreSSLErrors)
 	//Create Request
