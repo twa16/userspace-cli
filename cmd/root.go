@@ -18,30 +18,32 @@ import (
 	"fmt"
 	"os"
 
+	"bytes"
+	"crypto/tls"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"crypto/tls"
-	"net/http"
-	"github.com/twa16/userspace/daemon"
-	"encoding/json"
-	"bytes"
 	"github.com/twa16/go-auth"
-	"github.com/pkg/errors"
-	"strconv"
-	"io/ioutil"
-	"github.com/mitchellh/go-homedir"
+	"github.com/twa16/userspace/daemon"
 )
 
 type SessionRecord struct {
-	UserID uint
-	SessionToken string
+	UserID               uint
+	SessionToken         string
 	OrchestratorHostname string
-	IgnoreSSLErrors bool
+	IgnoreSSLErrors      bool
 }
 
 var cfgFile string
 var OrchestratorInfo *userspaced.OrchestratorInfo
 var OrchestratorURL string
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "userspace-cli",
@@ -52,9 +54,9 @@ examples and usage of using your application. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-// Uncomment the following line if your bare application
-// has an action associated with it:
-//	Run: func(cmd *cobra.Command, args []string) { },
+	// Uncomment the following line if your bare application
+	// has an action associated with it:
+	//	Run: func(cmd *cobra.Command, args []string) { },
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -67,6 +69,7 @@ func Execute() {
 }
 
 var ignoreSSL bool
+
 func init() {
 	cobra.OnInitialize(initConfig)
 
@@ -109,7 +112,7 @@ func GetHttpClient(ignoreSSLErrors bool) *http.Client {
 
 func GetOrchestratorInformation(url string) (*userspaced.OrchestratorInfo, error) {
 	hClient := GetHttpClient(ignoreSSL)
-	resp, err := hClient.Get("https://"+url+"/orchestratorinfo")
+	resp, err := hClient.Get("https://" + url + "/orchestratorinfo")
 	if err != nil {
 		return nil, err
 	}
@@ -122,14 +125,14 @@ func GetOrchestratorInformation(url string) (*userspaced.OrchestratorInfo, error
 		return nil, err
 	}
 	OrchestratorInfo = orcInfo
-	OrchestratorURL = "https://"+url
+	OrchestratorURL = "https://" + url
 	return orcInfo, nil
 }
 
 //SubmitCASTicket Attempts authentication against orchestrator
 func SubmitCASTicket(ticket string) (*simpleauth.Session, error) {
 	hClient := GetHttpClient(ignoreSSL)
-	resp, err := hClient.Get(OrchestratorURL+"/caslogin?ticket="+ticket)
+	resp, err := hClient.Get(OrchestratorURL + "/caslogin?ticket=" + ticket)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
@@ -145,7 +148,7 @@ func SubmitCASTicket(ticket string) (*simpleauth.Session, error) {
 
 	//Catch other errors
 	if resp.StatusCode != 200 {
-		return nil, errors.New("Error "+strconv.Itoa(resp.StatusCode)+": "+buf.String())
+		return nil, errors.New("Error " + strconv.Itoa(resp.StatusCode) + ": " + buf.String())
 	}
 
 	//Unmarshal our session
@@ -160,14 +163,23 @@ func SubmitCASTicket(ticket string) (*simpleauth.Session, error) {
 }
 
 func SaveSession(sessionObj simpleauth.Session, hostname string, ignoreSSLErrors bool) error {
+	//Get path to file
+	sessionFilePath := viper.GetString("HomeDirectory") + "/.userspace-session"
+
+	//Generate record
 	sessionRecord := SessionRecord{
-		SessionToken: sessionObj.AuthenticationToken,
-		UserID: sessionObj.AuthUserID,
+		SessionToken:         sessionObj.AuthenticationToken,
+		UserID:               sessionObj.AuthUserID,
 		OrchestratorHostname: hostname,
-		IgnoreSSLErrors: ignoreSSLErrors,
+		IgnoreSSLErrors:      ignoreSSLErrors,
 	}
+
+	//Remove existing
+	os.Remove(sessionFilePath)
+
+	//Save and return
 	sessionJSON, _ := json.Marshal(sessionRecord)
-	err := ioutil.WriteFile(viper.GetString("HomeDirectory")+"/.userspace-session", sessionJSON, 0644)
+	err := ioutil.WriteFile(sessionFilePath, sessionJSON, 0644)
 	return err
 }
 
@@ -180,4 +192,3 @@ func GetSavedSession() (SessionRecord, error) {
 	err = json.Unmarshal(sessionBytes, &sessionRecord)
 	return sessionRecord, err
 }
-

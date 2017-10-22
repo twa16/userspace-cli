@@ -17,18 +17,19 @@ package cmd
 import (
 	"fmt"
 
+	"bufio"
+	"os"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/twa16/go-cas/client"
-	"os"
-	"bufio"
-	"strings"
 )
 
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Login to a Userspace cluster",
-	Long: `Login to a Userspace cluster.`,
+	Long:  `Login to a Userspace cluster.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		reader := bufio.NewReader(os.Stdin)
 
@@ -43,24 +44,24 @@ var loginCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		/*
-		var ignoreSSL bool
-		for true {
-			fmt.Print("Ignore SSL Errors(true/false): ")
-			ignoreSSLString, err := reader.ReadString('\n')
-			ignoreSSLString = strings.TrimSpace(ignoreSSLString)
-			if err != nil {
-				fmt.Println("Error: " + err.Error())
-				os.Exit(1)
-			}
-			ignoreSSL, err = strconv.ParseBool(ignoreSSLString)
-			if err == nil {
-				break
-			}
-		}*/
+			var ignoreSSL bool
+			for true {
+				fmt.Print("Ignore SSL Errors(true/false): ")
+				ignoreSSLString, err := reader.ReadString('\n')
+				ignoreSSLString = strings.TrimSpace(ignoreSSLString)
+				if err != nil {
+					fmt.Println("Error: " + err.Error())
+					os.Exit(1)
+				}
+				ignoreSSL, err = strconv.ParseBool(ignoreSSLString)
+				if err == nil {
+					break
+				}
+			}*/
 
 		//Make sure the orchestrator is allowing logins
 		if !orcInfo.AllowsLocalLogin && !orcInfo.SupportsCAS {
-			fmt.Errorf("Error: %s\n","Orchestrator not allowing logins")
+			fmt.Errorf("Error: %s\n", "Orchestrator not allowing logins")
 			os.Exit(1)
 		}
 
@@ -88,13 +89,13 @@ var loginCmd = &cobra.Command{
 			}
 			err = SaveSession(*session, orcHostname, ignoreSSL)
 			if err != nil {
-				fmt.Println("Failed to save session: "+ err.Error())
+				fmt.Println("Failed to save session: " + err.Error())
 				panic("Could not save session. Send help.")
 			}
 			fmt.Println("Sucessfully logged in and saved session.")
 
 		} else {
-			fmt.Errorf("Error: %s\n","Local Login not yet Supported!")
+			fmt.Errorf("Error: %s\n", "Local Login not yet Supported!")
 		}
 	},
 }
